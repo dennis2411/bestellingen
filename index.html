@@ -16,7 +16,7 @@ button.primary{background:var(--accent);color:white;border-color:var(--accent)}b
 input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat strong{display:block;font-size:1.5rem}.stat span{font-size:.85rem;color:var(--muted)}
 .tablewrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:760px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.82rem;color:var(--muted);background:#f8f9fb}tr:last-child td{border-bottom:0}.small{font-size:.85rem;color:var(--muted)}.status{display:inline-block;padding:5px 9px;border-radius:99px;background:var(--soft);font-size:.82rem;font-weight:700}.status[data-status="Printen"]{background:var(--orange)}.status[data-status="Geprint"],.status[data-status="Klaar/afhalen"],.status[data-status="Verzonden"]{background:var(--green)}
-label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--card);color:var(--ink)}dialog::backdrop{background:#0c1524a8}.form{padding:22px;display:grid;gap:14px;overflow:auto}.form h2{margin:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineitem{border:1px solid var(--line);padding:12px;border-radius:12px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:.9rem;min-height:1.2em}.empty{text-align:center;color:var(--muted);padding:36px}.hide{display:none!important}
+label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--card);color:var(--ink)}dialog::backdrop{background:#0c1524a8}.form{padding:22px;display:grid;gap:14px;overflow:auto}.form h2{margin:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineitem{border:1px solid var(--line);padding:12px;border-radius:12px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:.9rem;min-height:1.2em}.empty{text-align:center;color:var(--muted);padding:36px}.hide{display:none!important}.units{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0 10px}.units input{width:22px;height:22px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer}.units .small{margin-left:4px}
 @media(max-width:650px){header{padding-top:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.lineitem{grid-template-columns:1fr 1fr}.lineitem .product{grid-column:1/-1}.lineitem button{grid-column:2}.form{padding:17px}}
 </style>
 </head>
@@ -65,7 +65,7 @@ const CONFIG={owner:"dennis2411",repo:"bestellingen-data",folder:"orders",vault:
 const STATUSES=["Nieuw","Inplannen","Printen","Geprint","Inpakken","Klaar/afhalen","Verzonden"];
 const TOKEN_KEY="3dpm_code";
 const $=s=>document.querySelector(s);
-let orders=[],editing=null,token=null,shaById={},cache={},busy=false;
+let orders=[],editing=null,token=null,shaById={},cache={},busy=false,pending=0,saveQueue=Promise.resolve();
 const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function toast(msg){const t=$("#toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",2500)}
@@ -103,7 +103,7 @@ async function fetchOrders(){
  return entries.map(e=>e.order);
 }
 async function loadOrders(silent){
- if(busy)return;
+ if(busy||pending)return;
  try{orders=await fetchOrders();render()}
  catch(e){if(e.status===401){logout(e.message);return}if(!silent)throw e}
 }
@@ -171,13 +171,35 @@ async function checkAccess(){
  if(d.permissions&&d.permissions.push===false)throw new ApiError("Dit wachtwoord heeft alleen leesrechten. Maak een nieuw met Contents: Read and write.",403);
 }
 
+/* ---------- Voortgang per stuk ---------- */
+const fitDone=(d,q)=>Array.from({length:Math.max(0,Number(q)||0)},(_,i)=>!!(d&&d[i]));
+function unitBoxes(o,i,idx){
+ const d=fitDone(i.done,i.quantity);
+ return d.map((v,k)=>`<input type="checkbox" class="unit" data-oid="${escapeHtml(o.id)}" data-idx="${idx}" data-k="${k}" ${v?"checked":""} aria-label="Stuk ${k+1} van ${escapeHtml(i.product)} voltooid">`).join("")+`<span class="small">${d.filter(Boolean).length}/${d.length} af</span>`;
+}
+function toggleUnit(cb){
+ const o=orders.find(x=>x.id===cb.dataset.oid);if(!o)return;
+ const idx=+cb.dataset.idx,k=+cb.dataset.k;
+ const items=o.items.map((it,j)=>j===idx?{...it,done:fitDone(it.done,it.quantity).map((v,m)=>m===k?cb.checked:v)}:it);
+ const updated={...o,items,updated:new Date().toISOString()};
+ orders=orders.map(x=>x.id===o.id?updated:x);render();
+ pending++;
+ saveQueue=saveQueue.then(async()=>{
+  const latest=orders.find(x=>x.id===o.id);if(!latest)return;
+  busy=true;
+  try{await saveExisting(latest)}
+  catch(err){alert("Opslaan mislukt: "+err.message);busy=false;pending=0;await loadOrders(true)}
+  finally{busy=false}
+ }).finally(()=>{pending=Math.max(0,pending-1)});
+}
+
 /* ---------- Weergave ---------- */
 function render(){
  const open=orders.filter(o=>!["Klaar/afhalen","Verzonden"].includes(o.status));
  $("#countAll").textContent=open.length;$("#countPrint").textContent=orders.filter(o=>o.status==="Printen").length;$("#countPack").textContent=orders.filter(o=>o.status==="Inpakken").length;$("#countDone").textContent=orders.filter(o=>["Klaar/afhalen","Verzonden"].includes(o.status)).length;
  const q=$("#search").value.toLowerCase(),f=$("#filter").value;
  const list=orders.filter(o=>(!f||o.status===f)&&(!q||[o.id,o.customer,o.notes,...(o.items||[]).map(i=>i.product+" "+i.color)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
- $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div></td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map(i=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div>`).join("<br>")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
+ $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div></td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map((i,idx)=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div><div class="units">${unitBoxes(o,i,idx)}</div>`).join("")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
  $("#empty").classList.toggle("hide",list.length>0);
 }
 STATUSES.forEach(s=>$("#filter").insertAdjacentHTML("beforeend",`<option>${escapeHtml(s)}</option>`));
@@ -185,6 +207,7 @@ STATUSES.forEach(s=>$("#orderStatus").insertAdjacentHTML("beforeend",`<option>${
 $("#search").oninput=render;$("#filter").onchange=render;
 
 $("#ordersBody").onchange=async e=>{
+ if(e.target.classList.contains("unit")){toggleUnit(e.target);return}
  const id=e.target.dataset.statusId;if(!id)return;
  const o=orders.find(x=>x.id===id);if(!o)return;
  const updated={...o,status:e.target.value,updated:new Date().toISOString()};
@@ -194,7 +217,7 @@ $("#ordersBody").onchange=async e=>{
  finally{busy=false}
 };
 $("#ordersBody").onclick=e=>{const b=e.target.closest("[data-edit]");if(b)openOrder(orders.find(o=>o.id===b.dataset.edit))};
-function addLine(item={}){const d=document.createElement("div");d.className="lineitem";d.innerHTML=`<label class="product">Product<input class="p" required value="${escapeHtml(item.product||"")}" placeholder="Bijv. kerstboom"></label><label>Kleur<input class="c" value="${escapeHtml(item.color||"")}" placeholder="Beige"></label><label>Aantal<input class="n" type="number" min="1" step="1" required value="${escapeHtml(item.quantity||1)}"></label><button type="button" class="danger remove">×</button>`;d.querySelector(".remove").onclick=()=>d.remove();$("#lines").append(d)}
+function addLine(item={}){const d=document.createElement("div");d.className="lineitem";d.dataset.done=JSON.stringify(item.done||[]);d.innerHTML=`<label class="product">Product<input class="p" required value="${escapeHtml(item.product||"")}" placeholder="Bijv. kerstboom"></label><label>Kleur<input class="c" value="${escapeHtml(item.color||"")}" placeholder="Beige"></label><label>Aantal<input class="n" type="number" min="1" step="1" required value="${escapeHtml(item.quantity||1)}"></label><button type="button" class="danger remove">×</button>`;d.querySelector(".remove").onclick=()=>d.remove();$("#lines").append(d)}
 $("#addLine").onclick=()=>addLine();
 function openOrder(o=null){editing=o;$("#dialogTitle").textContent=o?"Bestelling bewerken":"Nieuwe bestelling";$("#customer").value=o?.customer||"";$("#deadline").value=o?.deadline||"";$("#notes").value=o?.notes||"";$("#orderStatus").value=o?.status||"Nieuw";$("#orderId").value=o?.id||nextId();$("#lines").innerHTML="";(o?.items?.length?o.items:[{}]).forEach(addLine);$("#deleteOrder").classList.toggle("hide",!o);$("#formMsg").textContent="";$("#orderDialog").showModal()}
 $("#addOrder").onclick=async()=>{try{await loadOrders()}catch(e){alert(e.message);return}openOrder()};
@@ -202,7 +225,7 @@ $("#cancel").onclick=()=>$("#orderDialog").close();
 
 $("#orderForm").onsubmit=async e=>{
  e.preventDefault();
- const lines=[...$("#lines").querySelectorAll(".lineitem")].map(d=>({product:d.querySelector(".p").value.trim(),color:d.querySelector(".c").value.trim(),quantity:Number(d.querySelector(".n").value)})).filter(i=>i.product&&i.quantity>0);
+ const lines=[...$("#lines").querySelectorAll(".lineitem")].map(d=>({product:d.querySelector(".p").value.trim(),color:d.querySelector(".c").value.trim(),quantity:Number(d.querySelector(".n").value),done:fitDone(JSON.parse(d.dataset.done||"[]"),Number(d.querySelector(".n").value))})).filter(i=>i.product&&i.quantity>0);
  if(!lines.length){$("#formMsg").textContent="Voeg minimaal één product toe.";return}
  const now=new Date().toLocaleDateString("nl-NL");
  const o={id:$("#orderId").value,customer:$("#customer").value.trim(),deadline:$("#deadline").value,notes:$("#notes").value.trim(),status:$("#orderStatus").value,items:lines,created:editing?.created||now,updated:new Date().toISOString()};
