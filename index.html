@@ -15,8 +15,19 @@ button.primary{background:var(--accent);color:white;border-color:var(--accent)}b
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}.toolbar input{flex:1;min-width:180px}
 input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat strong{display:block;font-size:1.5rem}.stat span{font-size:.85rem;color:var(--muted)}
-.tablewrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:760px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.82rem;color:var(--muted);background:#f8f9fb}tr:last-child td{border-bottom:0}.small{font-size:.85rem;color:var(--muted)}.status{display:inline-block;padding:5px 9px;border-radius:99px;background:var(--soft);font-size:.82rem;font-weight:700}.status[data-status="Printen"]{background:var(--orange)}.status[data-status="Geprint"],.status[data-status="Klaar/afhalen"],.status[data-status="Verzonden"]{background:var(--green)}
-label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--card);color:var(--ink)}dialog::backdrop{background:#0c1524a8}.form{padding:22px;display:grid;gap:14px;overflow:auto}.form h2{margin:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineitem{border:1px solid var(--line);padding:12px;border-radius:12px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:.9rem;min-height:1.2em}.empty{text-align:center;color:var(--muted);padding:36px}.hide{display:none!important}.units{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0 10px}.units input{width:22px;height:22px;padding:0;margin:0;accent-color:var(--accent);cursor:pointer}.units .small{margin-left:4px}
+.tablewrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:760px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.82rem;color:var(--muted);background:#f8f9fb}tr:last-child td{border-bottom:0}.small{font-size:.85rem;color:var(--muted)}.status{display:inline-block;padding:5px 9px;border-radius:99px;background:var(--soft);font-size:.82rem;font-weight:700}.status[data-status="Printen"]{background:var(--orange)}.status[data-status="Klaar"]{background:var(--green)}.status[data-status="Voltooid"]{background:#d2dae3;color:#3b4856}
+label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--card);color:var(--ink)}dialog::backdrop{background:#0c1524a8}.form{padding:22px;display:grid;gap:14px;overflow:auto}.form h2{margin:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineitem{border:1px solid var(--line);padding:12px;border-radius:12px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:.9rem;min-height:1.2em}.empty{text-align:center;color:var(--muted);padding:36px}.hide{display:none!important}.units{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 12px}
+.chk{position:relative;width:30px;height:30px;display:inline-block;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chk input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;padding:0;cursor:pointer;z-index:2}
+.chk span{position:absolute;inset:0;border-radius:9px;border:2px solid #c3ccd6;background:#fff;box-shadow:inset 0 1px 2px #1a233014;transition:all .18s ease;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.chk:hover span{border-color:var(--accent)}
+.chk span:after{content:"";position:absolute;left:8px;top:3px;width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) scale(0);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.chk input:checked+span{background:linear-gradient(135deg,#2fbf71,#1f9d57);border-color:#1f9d57;box-shadow:0 2px 8px #1f9d5755}
+.chk input:checked+span:after{transform:rotate(45deg) scale(1)}
+.chk input:focus-visible+span{outline:3px solid #334fd555;outline-offset:2px}
+.units .small{margin-left:6px;font-weight:600}.units .small.ok{color:#1f9d57}
+.bar{height:6px;border-radius:99px;background:#e6eaef;overflow:hidden;margin-top:8px;min-width:90px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#334fd5,#2fbf71);border-radius:99px;transition:width .3s}
+.left{font-size:.8rem;font-weight:650;margin-top:4px}.left.ok{color:#1f9d57}
 @media(max-width:650px){header{padding-top:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.lineitem{grid-template-columns:1fr 1fr}.lineitem .product{grid-column:1/-1}.lineitem button{grid-column:2}.form{padding:17px}}
 </style>
 </head>
@@ -40,10 +51,10 @@ label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;borde
   <div class="stats">
     <div class="stat"><strong id="countAll">0</strong><span>Open bestellingen</span></div>
     <div class="stat"><strong id="countPrint">0</strong><span>Printen</span></div>
-    <div class="stat"><strong id="countPack">0</strong><span>Inpakken</span></div>
-    <div class="stat"><strong id="countDone">0</strong><span>Klaar / verzonden</span></div>
+    <div class="stat"><strong id="countPack">0</strong><span>Klaar</span></div>
+    <div class="stat"><strong id="countDone">0</strong><span>Stuks nog te doen</span></div>
   </div>
-  <div class="toolbar"><input id="search" type="search" placeholder="Zoek order, klant of product"><select id="filter" style="max-width:210px"><option value="">Alle statussen</option></select><button class="primary" id="addOrder">+ Nieuwe bestelling</button><button id="print">Print lijst</button></div>
+  <div class="toolbar"><input id="search" type="search" placeholder="Zoek order, klant of product"><select id="filter" style="max-width:210px"><option value="">Alle statussen</option></select><button class="primary" id="addOrder">+ Nieuwe bestelling</button><button id="toggleDone" class="ghost hide"></button><button id="print">Print lijst</button></div>
   <div class="tablewrap"><table><thead><tr><th>Order</th><th>Klant</th><th>Producten</th><th>Status</th><th>Deadline</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table><div id="empty" class="empty hide">Nog geen bestellingen. Voeg de eerste toe.</div></div>
   <p class="small">Wijzigingen worden direct online opgeslagen en de lijst ververst automatisch.</p>
 </section>
@@ -62,7 +73,10 @@ label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;borde
 // Naam van jouw GitHub-account en van de PRIVÉ-repository waarin de bestellingen komen.
 const CONFIG={owner:"dennis2411",repo:"bestellingen-data",folder:"orders",vault:"wyJ9MyopNw+Au7gJwwzp8Q==.h+1LWUXWS9N5jt+t.cV/9VhJF3Y31QKbT/CaQsP+4EZGIv6hlH/v9jHiWEcA8kc+Pm5UBr8cgyrGrI9PEK62zgsJDpL+FnVrGG8PC46KAQ7KoHYvqrHfCegCA591OLeu7RZoAHEhDH8s6rLO0aFZAieH18Qdpk2DQiw=="};
 // ===========================================
-const STATUSES=["Nieuw","Inplannen","Printen","Geprint","Inpakken","Klaar/afhalen","Verzonden"];
+const STATUSES=["Besteld","Printen","Klaar","Voltooid"];
+const OLD_STATUS={"Nieuw":"Besteld","Inplannen":"Besteld","Printen":"Printen","Geprint":"Klaar","Inpakken":"Klaar","Klaar/afhalen":"Klaar","Verzonden":"Voltooid"};
+let showDone=false;try{showDone=localStorage.getItem("3dpm_showdone")==="1"}catch{}
+const migrateStatus=s=>STATUSES.includes(s)?s:(OLD_STATUS[s]||"Besteld");
 const TOKEN_KEY="3dpm_code";
 const $=s=>document.querySelector(s);
 let orders=[],editing=null,token=null,shaById={},cache={},busy=false,pending=0,saveQueue=Promise.resolve();
@@ -100,7 +114,7 @@ async function fetchOrders(){
  }))).filter(Boolean);
  cache={};shaById={};
  entries.forEach(e=>{cache[e.sha]=e;shaById[e.order.id]=e.sha});
- return entries.map(e=>e.order);
+ return entries.map(e=>({...e.order,status:migrateStatus(e.order.status)}));
 }
 async function loadOrders(silent){
  if(busy||pending)return;
@@ -174,9 +188,10 @@ async function checkAccess(){
 /* ---------- Voortgang per stuk ---------- */
 const fitDone=(d,q)=>Array.from({length:Math.max(0,Number(q)||0)},(_,i)=>!!(d&&d[i]));
 function unitBoxes(o,i,idx){
- const d=fitDone(i.done,i.quantity);
- return d.map((v,k)=>`<input type="checkbox" class="unit" data-oid="${escapeHtml(o.id)}" data-idx="${idx}" data-k="${k}" ${v?"checked":""} aria-label="Stuk ${k+1} van ${escapeHtml(i.product)} voltooid">`).join("")+`<span class="small">${d.filter(Boolean).length}/${d.length} af</span>`;
+ const d=fitDone(i.done,i.quantity),n=d.filter(Boolean).length,rest=d.length-n;
+ return d.map((v,k)=>`<label class="chk"><input type="checkbox" class="unit" data-oid="${escapeHtml(o.id)}" data-idx="${idx}" data-k="${k}" ${v?"checked":""} aria-label="Stuk ${k+1} van ${escapeHtml(i.product)} voltooid"><span></span></label>`).join("")+`<span class="small ${rest===0?"ok":""}">${rest===0?"✓ Af":rest+" nog te doen"} (${n}/${d.length})</span>`;
 }
+function orderProgress(o){let t=0,d=0;(o.items||[]).forEach(i=>{const a=fitDone(i.done,i.quantity);t+=a.length;d+=a.filter(Boolean).length});return{total:t,done:d,rest:t-d}}
 function toggleUnit(cb){
  const o=orders.find(x=>x.id===cb.dataset.oid);if(!o)return;
  const idx=+cb.dataset.idx,k=+cb.dataset.k;
@@ -195,12 +210,16 @@ function toggleUnit(cb){
 
 /* ---------- Weergave ---------- */
 function render(){
- const open=orders.filter(o=>!["Klaar/afhalen","Verzonden"].includes(o.status));
- $("#countAll").textContent=open.length;$("#countPrint").textContent=orders.filter(o=>o.status==="Printen").length;$("#countPack").textContent=orders.filter(o=>o.status==="Inpakken").length;$("#countDone").textContent=orders.filter(o=>["Klaar/afhalen","Verzonden"].includes(o.status)).length;
+ const open=orders.filter(o=>o.status!=="Voltooid");
+ $("#countAll").textContent=open.length;$("#countPrint").textContent=orders.filter(o=>o.status==="Printen").length;$("#countPack").textContent=orders.filter(o=>o.status==="Klaar").length;$("#countDone").textContent=open.reduce((s,o)=>s+orderProgress(o).rest,0);
  const q=$("#search").value.toLowerCase(),f=$("#filter").value;
- const list=orders.filter(o=>(!f||o.status===f)&&(!q||[o.id,o.customer,o.notes,...(o.items||[]).map(i=>i.product+" "+i.color)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
- $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div></td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map((i,idx)=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div><div class="units">${unitBoxes(o,i,idx)}</div>`).join("")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
+ const list=orders.filter(o=>(!f||o.status===f)&&(showDone||f==="Voltooid"||o.status!=="Voltooid")&&(!q||[o.id,o.customer,o.notes,...(o.items||[]).map(i=>i.product+" "+i.color)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
+ $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div>${(()=>{const p=orderProgress(o);return `<div class="bar"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div><div class="left ${p.rest===0?"ok":""}">${p.rest===0?"✓ Alles af":p.rest+" van "+p.total+" nog te doen"}</div>`})()}</td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map((i,idx)=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div><div class="units">${unitBoxes(o,i,idx)}</div>`).join("")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
  $("#empty").classList.toggle("hide",list.length>0);
+ const nDone=orders.filter(o=>o.status==="Voltooid").length;
+ $("#empty").textContent=orders.length&&!showDone&&nDone===orders.length&&!f&&!q?"Alle bestellingen zijn voltooid. Gebruik 'Toon voltooid' om ze te zien.":(orders.length?"Geen bestellingen gevonden.":"Nog geen bestellingen. Voeg de eerste toe.");
+ $("#toggleDone").classList.toggle("hide",nDone===0&&!showDone);
+ $("#toggleDone").textContent=showDone?"Verberg voltooid":"Toon voltooid ("+nDone+")";
 }
 STATUSES.forEach(s=>$("#filter").insertAdjacentHTML("beforeend",`<option>${escapeHtml(s)}</option>`));
 STATUSES.forEach(s=>$("#orderStatus").insertAdjacentHTML("beforeend",`<option>${escapeHtml(s)}</option>`));
@@ -212,14 +231,14 @@ $("#ordersBody").onchange=async e=>{
  const o=orders.find(x=>x.id===id);if(!o)return;
  const updated={...o,status:e.target.value,updated:new Date().toISOString()};
  busy=true;
- try{await saveExisting(updated);orders=orders.map(x=>x.id===id?updated:x);render();toast("Status opgeslagen")}
+ try{await saveExisting(updated);orders=orders.map(x=>x.id===id?updated:x);render();toast(updated.status==="Voltooid"&&!showDone?"Voltooid en verborgen (zie Toon voltooid)":"Status opgeslagen")}
  catch(err){alert("Opslaan mislukt: "+err.message);busy=false;await loadOrders(true);render()}
  finally{busy=false}
 };
 $("#ordersBody").onclick=e=>{const b=e.target.closest("[data-edit]");if(b)openOrder(orders.find(o=>o.id===b.dataset.edit))};
 function addLine(item={}){const d=document.createElement("div");d.className="lineitem";d.dataset.done=JSON.stringify(item.done||[]);d.innerHTML=`<label class="product">Product<input class="p" required value="${escapeHtml(item.product||"")}" placeholder="Bijv. kerstboom"></label><label>Kleur<input class="c" value="${escapeHtml(item.color||"")}" placeholder="Beige"></label><label>Aantal<input class="n" type="number" min="1" step="1" required value="${escapeHtml(item.quantity||1)}"></label><button type="button" class="danger remove">×</button>`;d.querySelector(".remove").onclick=()=>d.remove();$("#lines").append(d)}
 $("#addLine").onclick=()=>addLine();
-function openOrder(o=null){editing=o;$("#dialogTitle").textContent=o?"Bestelling bewerken":"Nieuwe bestelling";$("#customer").value=o?.customer||"";$("#deadline").value=o?.deadline||"";$("#notes").value=o?.notes||"";$("#orderStatus").value=o?.status||"Nieuw";$("#orderId").value=o?.id||nextId();$("#lines").innerHTML="";(o?.items?.length?o.items:[{}]).forEach(addLine);$("#deleteOrder").classList.toggle("hide",!o);$("#formMsg").textContent="";$("#orderDialog").showModal()}
+function openOrder(o=null){editing=o;$("#dialogTitle").textContent=o?"Bestelling bewerken":"Nieuwe bestelling";$("#customer").value=o?.customer||"";$("#deadline").value=o?.deadline||"";$("#notes").value=o?.notes||"";$("#orderStatus").value=o?.status||"Besteld";$("#orderId").value=o?.id||nextId();$("#lines").innerHTML="";(o?.items?.length?o.items:[{}]).forEach(addLine);$("#deleteOrder").classList.toggle("hide",!o);$("#formMsg").textContent="";$("#orderDialog").showModal()}
 $("#addOrder").onclick=async()=>{try{await loadOrders()}catch(e){alert(e.message);return}openOrder()};
 $("#cancel").onclick=()=>$("#orderDialog").close();
 
@@ -233,7 +252,7 @@ $("#orderForm").onsubmit=async e=>{
  try{
   if(editing)await saveExisting(o);else await createOrder(o);
   orders=editing?orders.map(x=>x.id===o.id?o:x):[o,...orders];
-  $("#orderDialog").close();render();toast("Bestelling opgeslagen");
+  $("#orderDialog").close();render();toast(o.status==="Voltooid"&&!showDone?"Voltooid en verborgen (zie Toon voltooid)":"Bestelling opgeslagen");
  }catch(err){$("#formMsg").textContent="Opslaan mislukt: "+err.message}
  finally{busy=false}
 };
@@ -244,6 +263,7 @@ $("#deleteOrder").onclick=async()=>{
  catch(err){$("#formMsg").textContent="Verwijderen mislukt: "+err.message}
  finally{busy=false}
 };
+$("#toggleDone").onclick=()=>{showDone=!showDone;try{localStorage.setItem("3dpm_showdone",showDone?"1":"0")}catch{}render()};
 $("#print").onclick=()=>window.print();
 
 $("#loginForm").onsubmit=async e=>{
