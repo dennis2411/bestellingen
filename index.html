@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<title>3D Print Manager</title>
+<style>
+:root{color-scheme:light;--bg:#f2f4f7;--card:#fff;--ink:#18212b;--muted:#647282;--line:#dce2e8;--accent:#334fd5;--soft:#e9edff;--green:#e1f4e8;--orange:#fff0d6;--red:#fde5e3}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+header{max-width:1100px;margin:auto;padding:26px 20px 10px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:clamp(1.5rem,4vw,2.25rem);margin:0;letter-spacing:-.04em}main{max-width:1100px;margin:auto;padding:10px 20px 50px}
+button,input,select,textarea{font:inherit}button{cursor:pointer;touch-action:manipulation;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--card);color:var(--ink);font-weight:650}
+button.primary{background:var(--accent);color:white;border-color:var(--accent)}button.ghost{background:transparent}button.danger{color:#b42318;border-color:#e7b4b0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 18px}.toolbar input{flex:1;min-width:180px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}.stat strong{display:block;font-size:1.5rem}.stat span{font-size:.85rem;color:var(--muted)}
+.tablewrap{overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:760px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.82rem;color:var(--muted);background:#f8f9fb}tr:last-child td{border-bottom:0}.small{font-size:.85rem;color:var(--muted)}.status{display:inline-block;padding:5px 9px;border-radius:99px;background:var(--soft);font-size:.82rem;font-weight:700}.status[data-status="Printen"]{background:var(--orange)}.status[data-status="Geprint"],.status[data-status="Klaar/afhalen"],.status[data-status="Verzonden"]{background:var(--green)}
+label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;border-radius:16px;padding:0;width:min(640px,94vw);max-height:90vh;background:var(--card);color:var(--ink)}dialog::backdrop{background:#0c1524a8}.form{padding:22px;display:grid;gap:14px;overflow:auto}.form h2{margin:0}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.lineitem{border:1px solid var(--line);padding:12px;border-radius:12px;display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.notice{color:var(--muted);font-size:.9rem;min-height:1.2em}.empty{text-align:center;color:var(--muted);padding:36px}.hide{display:none!important}
+@media(max-width:650px){header{padding-top:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.lineitem{grid-template-columns:1fr 1fr}.lineitem .product{grid-column:1/-1}.lineitem button{grid-column:2}.form{padding:17px}}
+</style>
+</head>
+<body>
+<header><div><h1>3D Print Manager</h1><div class="small">Bestellingen en printplanning</div></div><button id="logout" class="ghost hide">Uitloggen</button></header>
+<main>
+<section id="loginPanel">
+  <div class="stat" style="max-width:480px"><h2>Inloggen</h2><p class="small">Alleen voor jullie beheer.</p>
+    <form id="loginForm" class="form" style="padding:0">
+      <div id="pinFields"><label>Pincode<input id="pin" type="password" inputmode="numeric" autocomplete="current-password"></label></div>
+      <div id="setupFields" class="hide"><p class="small">Eerste keer instellen: plak het GitHub-token en kies de pincode die iedereen gaat gebruiken. Je krijgt daarna één tekst om in index.html te plakken.</p>
+        <label>GitHub-token<input id="password" type="password" autocomplete="off"></label>
+        <label>Pincode (minimaal 4 tekens)<input id="pinNew" type="password" inputmode="numeric" autocomplete="off"></label></div>
+      <button class="primary" id="loginBtn">Inloggen</button>
+      <div id="vaultOut" class="hide"><label>Plak deze tekst in index.html tussen de aanhalingstekens bij <code>vault:</code><textarea id="vaultText" rows="5" readonly onclick="this.select()"></textarea></label></div>
+      <div id="loginMsg" class="notice"></div>
+    </form>
+  </div>
+</section>
+<section id="app" class="hide">
+  <div class="stats">
+    <div class="stat"><strong id="countAll">0</strong><span>Open bestellingen</span></div>
+    <div class="stat"><strong id="countPrint">0</strong><span>Printen</span></div>
+    <div class="stat"><strong id="countPack">0</strong><span>Inpakken</span></div>
+    <div class="stat"><strong id="countDone">0</strong><span>Klaar / verzonden</span></div>
+  </div>
+  <div class="toolbar"><input id="search" type="search" placeholder="Zoek order, klant of product"><select id="filter" style="max-width:210px"><option value="">Alle statussen</option></select><button class="primary" id="addOrder">+ Nieuwe bestelling</button><button id="print">Print lijst</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Order</th><th>Klant</th><th>Producten</th><th>Status</th><th>Deadline</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table><div id="empty" class="empty hide">Nog geen bestellingen. Voeg de eerste toe.</div></div>
+  <p class="small">Wijzigingen worden direct online opgeslagen en de lijst ververst automatisch.</p>
+</section>
+</main>
+<dialog id="orderDialog"><form id="orderForm" class="form">
+<h2 id="dialogTitle">Nieuwe bestelling</h2>
+<div class="grid2"><label>Klant / naam<input id="customer" required placeholder="Bijv. Lisa"></label><label>Deadline<input id="deadline" type="date"></label></div>
+<label>Opmerkingen<textarea id="notes" rows="2"></textarea></label>
+<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Producten</strong><button type="button" id="addLine">+ Productregel</button></div><div id="lines"></div></div>
+<div class="grid2"><label>Status<select id="orderStatus"></select></label><label>Ordernummer<input id="orderId" readonly></label></div>
+<div id="formMsg" class="notice"></div><div class="actions"><button type="button" id="cancel">Annuleren</button><button type="button" id="deleteOrder" class="danger hide">Verwijderen</button><button class="primary">Opslaan</button></div>
+</form></dialog>
+<div id="toast" style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#18212b;color:white;padding:10px 18px;border-radius:99px;display:none"></div>
+<script>
+// ====== INSTELLINGEN (geen geheimen!) ======
+// Naam van jouw GitHub-account en van de PRIVÉ-repository waarin de bestellingen komen.
+const CONFIG={owner:"dennis2411",repo:"bestellingen-data",folder:"orders",vault:""};
+// ===========================================
+const STATUSES=["Nieuw","Inplannen","Printen","Geprint","Inpakken","Klaar/afhalen","Verzonden"];
+const TOKEN_KEY="3dpm_code";
+const $=s=>document.querySelector(s);
+let orders=[],editing=null,token=null,shaById={},cache={},busy=false;
+const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(msg){const t=$("#toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",2500)}
+function b64(s){let bin="";new TextEncoder().encode(s).forEach(x=>bin+=String.fromCharCode(x));return btoa(bin)}
+class ApiError extends Error{constructor(m,status){super(m);this.status=status}}
+
+/* ---------- GitHub API ---------- */
+async function gh(path,opt={}){
+ let r;
+ try{r=await fetch("https://api.github.com/repos/"+CONFIG.owner+"/"+CONFIG.repo+path,{cache:"no-store",...opt,headers:{"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Authorization":"Bearer "+token,...(opt.headers||{})}})}
+ catch{throw new ApiError("Geen verbinding met GitHub. Controleer je internet en probeer opnieuw.",0)}
+ if(r.ok)return r;
+ let msg="";try{msg=(await r.json()).message||""}catch{}
+ if(r.status===401)throw new ApiError("Het beheerwachtwoord is ongeldig of verlopen.",401);
+ if(r.status===403||r.status===429){
+  if(/rate limit/i.test(msg))throw new ApiError("Te veel verzoeken naar GitHub. Wacht even en probeer opnieuw.",429);
+  throw new ApiError("Geen rechten. Het wachtwoord heeft geen schrijfrechten (Contents: Read and write) op de data-repository.",403)}
+ if(r.status===404)throw new ApiError("Niet gevonden op GitHub. Controleer de repository-naam in het bestand en de rechten van het wachtwoord.",404);
+ throw new ApiError("GitHub-fout ("+r.status+"): "+msg,r.status);
+}
+const filePath=id=>"/contents/"+CONFIG.folder+"/"+encodeURIComponent(id)+".json";
+
+async function fetchOrders(){
+ let list;
+ try{list=await (await gh("/contents/"+CONFIG.folder)).json()}catch(e){if(e.status===404)list=[];else throw e}
+ if(!Array.isArray(list))list=[];
+ list=list.filter(f=>f.type==="file"&&f.name.endsWith(".json"));
+ const entries=(await Promise.all(list.map(async f=>{
+  if(cache[f.sha])return cache[f.sha];
+  const r=await gh("/contents/"+CONFIG.folder+"/"+encodeURIComponent(f.name),{headers:{"Accept":"application/vnd.github.raw+json"}});
+  try{return{order:JSON.parse(await r.text()),sha:f.sha}}catch{return null}
+ }))).filter(Boolean);
+ cache={};shaById={};
+ entries.forEach(e=>{cache[e.sha]=e;shaById[e.order.id]=e.sha});
+ return entries.map(e=>e.order);
+}
+async function loadOrders(silent){
+ if(busy)return;
+ try{orders=await fetchOrders();render()}
+ catch(e){if(e.status===401){logout(e.message);return}if(!silent)throw e}
+}
+async function currentSha(id){try{return (await (await gh(filePath(id))).json()).sha}catch(e){if(e.status===404)return null;throw e}}
+async function putFile(o,sha){
+ const body={message:(sha?"Wijzig bestelling ":"Nieuwe bestelling ")+o.id,content:b64(JSON.stringify(o,null,2))};
+ if(sha)body.sha=sha;
+ return (await (await gh(filePath(o.id),{method:"PUT",body:JSON.stringify(body)})).json()).content.sha;
+}
+const CONFLICT="Deze bestelling is ondertussen door iemand anders gewijzigd of verwijderd. De lijst is ververst. Open de bestelling opnieuw en probeer het nog eens.";
+async function saveExisting(o){
+ for(let i=0;i<4;i++){
+  try{shaById[o.id]=await putFile(o,shaById[o.id]);return}
+  catch(e){
+   if(e.status!==409&&e.status!==422)throw e;
+   if(await currentSha(o.id)===shaById[o.id]){await sleep(300+Math.random()*600);continue}
+   busy=false;await loadOrders(true);throw new ApiError(CONFLICT,409)}
+ }
+ throw new ApiError("GitHub is even druk. Probeer het over een paar seconden opnieuw.",409);
+}
+const idNum=id=>Number((String(id).match(/^ORD-(\d+)$/)||[])[1]||0);
+const makeId=n=>"ORD-"+String(n).padStart(4,"0");
+const nextId=()=>makeId(Math.max(0,...orders.map(o=>idNum(o.id)))+1);
+async function createOrder(o){
+ for(let i=0;i<10;i++){
+  try{shaById[o.id]=await putFile(o,null);return}
+  catch(e){
+   if(e.status===422){o.id=makeId(idNum(o.id)+1);continue}
+   if(e.status===409){await sleep(300+Math.random()*600);continue}
+   throw e}
+ }
+ throw new ApiError("Opslaan mislukt na meerdere pogingen. Probeer het opnieuw.",409);
+}
+async function removeOrder(id){
+ for(let i=0;i<4;i++){
+  try{await gh(filePath(id),{method:"DELETE",body:JSON.stringify({message:"Verwijder bestelling "+id,sha:shaById[id]})});delete shaById[id];return}
+  catch(e){
+   if(e.status===404)return;
+   if(e.status!==409&&e.status!==422)throw e;
+   const cur=await currentSha(id);
+   if(cur===null)return;
+   if(cur===shaById[id]){await sleep(300+Math.random()*600);continue}
+   busy=false;await loadOrders(true);throw new ApiError(CONFLICT,409)}
+ }
+ throw new ApiError("GitHub is even druk. Probeer het over een paar seconden opnieuw.",409);
+}
+
+/* ---------- Pincode (versleutelt het token) ---------- */
+const toB64=u=>{let s="";u.forEach(x=>s+=String.fromCharCode(x));return btoa(s)};
+const fromB64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function deriveKey(pin,salt){const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(pin),"PBKDF2",false,["deriveKey"]);return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:200000,hash:"SHA-256"},km,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])}
+async function sealToken(tok,pin){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pin,salt);const ct=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(tok)));return [toB64(salt),toB64(iv),toB64(ct)].join(".")}
+async function openToken(vault,pin){const [s,i,c]=vault.split(".");const key=await deriveKey(pin,fromB64(s));return new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(i)},key,fromB64(c)))}
+function setLoginMode(){const setup=!CONFIG.vault;$("#pinFields").classList.toggle("hide",setup);$("#setupFields").classList.toggle("hide",!setup);$("#pin").required=!setup;$("#password").required=setup;$("#pinNew").required=setup;$("#loginBtn").textContent=setup?"Token controleren en code maken":"Inloggen"}
+
+/* ---------- Inloggen ---------- */
+function setAuth(on){$("#loginPanel").classList.toggle("hide",on);$("#app").classList.toggle("hide",!on);$("#logout").classList.toggle("hide",!on)}
+function logout(msg){
+ token=null;orders=[];cache={};shaById={};
+ try{localStorage.removeItem(TOKEN_KEY);sessionStorage.removeItem(TOKEN_KEY)}catch{}
+ render();setAuth(false);$("#loginMsg").textContent=msg||"";
+}
+async function checkAccess(){
+ const d=await (await gh("")).json();
+ if(d.permissions&&d.permissions.push===false)throw new ApiError("Dit wachtwoord heeft alleen leesrechten. Maak een nieuw met Contents: Read and write.",403);
+}
+
+/* ---------- Weergave ---------- */
+function render(){
+ const open=orders.filter(o=>!["Klaar/afhalen","Verzonden"].includes(o.status));
+ $("#countAll").textContent=open.length;$("#countPrint").textContent=orders.filter(o=>o.status==="Printen").length;$("#countPack").textContent=orders.filter(o=>o.status==="Inpakken").length;$("#countDone").textContent=orders.filter(o=>["Klaar/afhalen","Verzonden"].includes(o.status)).length;
+ const q=$("#search").value.toLowerCase(),f=$("#filter").value;
+ const list=orders.filter(o=>(!f||o.status===f)&&(!q||[o.id,o.customer,o.notes,...(o.items||[]).map(i=>i.product+" "+i.color)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
+ $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div></td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map(i=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div>`).join("<br>")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
+ $("#empty").classList.toggle("hide",list.length>0);
+}
+STATUSES.forEach(s=>$("#filter").insertAdjacentHTML("beforeend",`<option>${escapeHtml(s)}</option>`));
+STATUSES.forEach(s=>$("#orderStatus").insertAdjacentHTML("beforeend",`<option>${escapeHtml(s)}</option>`));
+$("#search").oninput=render;$("#filter").onchange=render;
+
+$("#ordersBody").onchange=async e=>{
+ const id=e.target.dataset.statusId;if(!id)return;
+ const o=orders.find(x=>x.id===id);if(!o)return;
+ const updated={...o,status:e.target.value,updated:new Date().toISOString()};
+ busy=true;
+ try{await saveExisting(updated);orders=orders.map(x=>x.id===id?updated:x);render();toast("Status opgeslagen")}
+ catch(err){alert("Opslaan mislukt: "+err.message);busy=false;await loadOrders(true);render()}
+ finally{busy=false}
+};
+$("#ordersBody").onclick=e=>{const b=e.target.closest("[data-edit]");if(b)openOrder(orders.find(o=>o.id===b.dataset.edit))};
+function addLine(item={}){const d=document.createElement("div");d.className="lineitem";d.innerHTML=`<label class="product">Product<input class="p" required value="${escapeHtml(item.product||"")}" placeholder="Bijv. kerstboom"></label><label>Kleur<input class="c" value="${escapeHtml(item.color||"")}" placeholder="Beige"></label><label>Aantal<input class="n" type="number" min="1" step="1" required value="${escapeHtml(item.quantity||1)}"></label><button type="button" class="danger remove">×</button>`;d.querySelector(".remove").onclick=()=>d.remove();$("#lines").append(d)}
+$("#addLine").onclick=()=>addLine();
+function openOrder(o=null){editing=o;$("#dialogTitle").textContent=o?"Bestelling bewerken":"Nieuwe bestelling";$("#customer").value=o?.customer||"";$("#deadline").value=o?.deadline||"";$("#notes").value=o?.notes||"";$("#orderStatus").value=o?.status||"Nieuw";$("#orderId").value=o?.id||nextId();$("#lines").innerHTML="";(o?.items?.length?o.items:[{}]).forEach(addLine);$("#deleteOrder").classList.toggle("hide",!o);$("#formMsg").textContent="";$("#orderDialog").showModal()}
+$("#addOrder").onclick=async()=>{try{await loadOrders()}catch(e){alert(e.message);return}openOrder()};
+$("#cancel").onclick=()=>$("#orderDialog").close();
+
+$("#orderForm").onsubmit=async e=>{
+ e.preventDefault();
+ const lines=[...$("#lines").querySelectorAll(".lineitem")].map(d=>({product:d.querySelector(".p").value.trim(),color:d.querySelector(".c").value.trim(),quantity:Number(d.querySelector(".n").value)})).filter(i=>i.product&&i.quantity>0);
+ if(!lines.length){$("#formMsg").textContent="Voeg minimaal één product toe.";return}
+ const now=new Date().toLocaleDateString("nl-NL");
+ const o={id:$("#orderId").value,customer:$("#customer").value.trim(),deadline:$("#deadline").value,notes:$("#notes").value.trim(),status:$("#orderStatus").value,items:lines,created:editing?.created||now,updated:new Date().toISOString()};
+ $("#formMsg").textContent="Opslaan...";busy=true;
+ try{
+  if(editing)await saveExisting(o);else await createOrder(o);
+  orders=editing?orders.map(x=>x.id===o.id?o:x):[o,...orders];
+  $("#orderDialog").close();render();toast("Bestelling opgeslagen");
+ }catch(err){$("#formMsg").textContent="Opslaan mislukt: "+err.message}
+ finally{busy=false}
+};
+$("#deleteOrder").onclick=async()=>{
+ if(!editing||!confirm("Deze bestelling verwijderen?"))return;
+ busy=true;
+ try{await removeOrder(editing.id);orders=orders.filter(o=>o.id!==editing.id);$("#orderDialog").close();render();toast("Bestelling verwijderd")}
+ catch(err){$("#formMsg").textContent="Verwijderen mislukt: "+err.message}
+ finally{busy=false}
+};
+$("#print").onclick=()=>window.print();
+
+$("#loginForm").onsubmit=async e=>{
+ e.preventDefault();const msg=t=>$("#loginMsg").textContent=t;
+ if(!CONFIG.vault){
+  const tok=$("#password").value.trim(),pin=$("#pinNew").value.trim();
+  if(pin.length<4){msg("Kies een pincode van minimaal 4 tekens.");return}
+  token=tok;msg("Token controleren...");
+  try{await checkAccess();$("#vaultText").value=await sealToken(tok,pin);$("#vaultOut").classList.remove("hide");msg("Token werkt. Kopieer de tekst hierboven, plak hem in index.html bij vault:\"\" en sla het bestand op GitHub op.")}
+  catch(err){msg(err.message)}
+  token=null;return}
+ msg("Inloggen...");
+ try{token=await openToken(CONFIG.vault,$("#pin").value.trim())}catch{await sleep(800);token=null;msg("Onjuiste pincode.");return}
+ try{await checkAccess();try{sessionStorage.setItem(TOKEN_KEY,token)}catch{}$("#pin").value="";msg("");setAuth(true);await loadOrders()}
+ catch(err){token=null;setAuth(false);msg(err.message)}
+};
+$("#logout").onclick=()=>logout();
+
+/* Automatisch verversen zodat alle apparaten dezelfde bestellingen zien */
+setInterval(()=>{if(token&&!busy&&!$("#orderDialog").open&&!document.hidden)loadOrders(true)},30000);
+document.addEventListener("visibilitychange",()=>{if(token&&!document.hidden&&!busy&&!$("#orderDialog").open)loadOrders(true)});
+
+(async()=>{
+ setLoginMode();
+ let t=null;try{t=sessionStorage.getItem(TOKEN_KEY)}catch{}
+ if(!CONFIG.vault||!t){setAuth(false);return}
+ token=t;
+ try{setAuth(true);await loadOrders()}catch(err){logout(err.status===0?"":err.message)}
+})();
+</script>
+<style>@media print{body{background:white}header button,.toolbar,select,td:last-child,.small:last-child{display:none!important}main{padding:0}.tablewrap{border:0}.stats{display:none}table{min-width:0}th,td{padding:7px;border:1px solid #bbb}}</style>
+</body>
+</html>
