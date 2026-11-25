@@ -27,7 +27,7 @@ label{display:grid;gap:5px;font-weight:650;font-size:.9rem}dialog{border:0;borde
 .chk input:focus-visible+span{outline:3px solid #334fd555;outline-offset:2px}
 .units .small{margin-left:6px;font-weight:600}.units .small.ok{color:#1f9d57}
 .bar{height:6px;border-radius:99px;background:#e6eaef;overflow:hidden;margin-top:8px;min-width:90px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#334fd5,#2fbf71);border-radius:99px;transition:width .3s}
-.left{font-size:.8rem;font-weight:650;margin-top:4px}.left.ok{color:#1f9d57}
+.dl{font-size:.82rem;font-weight:650;color:var(--muted);margin-top:3px}.dl.soon{color:#b26b00}.dl.late{color:#b42318}.left{font-size:.8rem;font-weight:650;margin-top:4px}.left.ok{color:#1f9d57}
 @media(max-width:650px){header{padding-top:20px}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.lineitem{grid-template-columns:1fr 1fr}.lineitem .product{grid-column:1/-1}.lineitem button{grid-column:2}.form{padding:17px}}
 </style>
 </head>
@@ -208,13 +208,26 @@ function toggleUnit(cb){
  }).finally(()=>{pending=Math.max(0,pending-1)});
 }
 
+/* ---------- Deadline ---------- */
+function fmtDate(s){const m=String(s||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+"-"+m[2]+"-"+m[1]:(s||"—")}
+function daysLeft(o){
+ const m=String(o.deadline||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+ if(!m||o.status==="Voltooid")return "";
+ const t=new Date();t.setHours(0,0,0,0);
+ const n=Math.round((new Date(+m[1],+m[2]-1,+m[3])-t)/864e5);
+ if(n<0)return `<div class="dl late">${-n} ${-n===1?"dag":"dagen"} te laat</div>`;
+ if(n===0)return `<div class="dl soon">Vandaag</div>`;
+ if(n===1)return `<div class="dl soon">Nog 1 dag</div>`;
+ return `<div class="dl ${n<=2?"soon":""}">Nog ${n} dagen</div>`;
+}
+
 /* ---------- Weergave ---------- */
 function render(){
  const open=orders.filter(o=>o.status!=="Voltooid");
  $("#countAll").textContent=open.length;$("#countPrint").textContent=orders.filter(o=>o.status==="Printen").length;$("#countPack").textContent=orders.filter(o=>o.status==="Klaar").length;$("#countDone").textContent=open.reduce((s,o)=>s+orderProgress(o).rest,0);
  const q=$("#search").value.toLowerCase(),f=$("#filter").value;
  const list=orders.filter(o=>(!f||o.status===f)&&(showDone||f==="Voltooid"||o.status!=="Voltooid")&&(!q||[o.id,o.customer,o.notes,...(o.items||[]).map(i=>i.product+" "+i.color)].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.deadline||"9999").localeCompare(b.deadline||"9999"));
- $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div>${(()=>{const p=orderProgress(o);return `<div class="bar"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div><div class="left ${p.rest===0?"ok":""}">${p.rest===0?"✓ Alles af":p.rest+" van "+p.total+" nog te doen"}</div>`})()}</td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map((i,idx)=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div><div class="units">${unitBoxes(o,i,idx)}</div>`).join("")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(o.deadline||"—")}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
+ $("#ordersBody").innerHTML=list.map(o=>`<tr><td><strong>${escapeHtml(o.id)}</strong><div class="small">${escapeHtml(o.created||"")}</div>${(()=>{const p=orderProgress(o);return `<div class="bar"><i style="width:${p.total?Math.round(p.done/p.total*100):0}%"></i></div><div class="left ${p.rest===0?"ok":""}">${p.rest===0?"✓ Alles af":p.rest+" van "+p.total+" nog te doen"}</div>`})()}</td><td>${escapeHtml(o.customer)}</td><td>${(o.items||[]).map((i,idx)=>`${escapeHtml(i.quantity)}× ${escapeHtml(i.product)}<div class="small">${escapeHtml(i.color)}</div><div class="units">${unitBoxes(o,i,idx)}</div>`).join("")}</td><td><span class="status" data-status="${escapeHtml(o.status)}">${escapeHtml(o.status)}</span><select data-status-id="${escapeHtml(o.id)}" aria-label="Status aanpassen">${STATUSES.map(s=>`<option ${s===o.status?"selected":""}>${escapeHtml(s)}</option>`).join("")}</select></td><td>${escapeHtml(fmtDate(o.deadline))}${daysLeft(o)}</td><td><button data-edit="${escapeHtml(o.id)}">Open</button></td></tr>`).join("");
  $("#empty").classList.toggle("hide",list.length>0);
  const nDone=orders.filter(o=>o.status==="Voltooid").length;
  $("#empty").textContent=orders.length&&!showDone&&nDone===orders.length&&!f&&!q?"Alle bestellingen zijn voltooid. Gebruik 'Toon voltooid' om ze te zien.":(orders.length?"Geen bestellingen gevonden.":"Nog geen bestellingen. Voeg de eerste toe.");
